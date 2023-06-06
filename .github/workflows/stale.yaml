@@ -1,4 +1,4 @@
-name: 'Close stale issues and PR'
+it name: 'Close stale issues and PR'
 
 on:
   schedule:
