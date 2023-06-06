@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  pull_request:
+    branches: main
+
+permissions:
+  contents: read
+
+jobs:
+  integration:
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash -l {0}
+        
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Setup Python
+        uses: actions/setup-python@v4
+      - name: Setup Anaconda
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          mamba-version: "*"
+          channels: conda-forge, defaults
+          auto-activate-base: false
+          activate-environment: python_template
+          environment-file: environment.yml
+        run: |
+          mamba info
+          mamba list
+
+      - name: Lint
+        run: |
+          flake8 ./py/
+
+      - name: Format
+        run: |
+          black ./py/
+
+      - name: Test
+        run: | 
+          pytest ./py/
