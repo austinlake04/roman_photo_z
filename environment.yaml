@@ -17,4 +17,5 @@ dependencies:
   - astropy
   - emcee
   - corner
+  - cmake
   - pip:
