@@ -1,4 +1,4 @@
-name: python_template
+name: roman_filters
 channels:
   - conda-forge
 dependencies:
@@ -13,4 +13,8 @@ dependencies:
   - tqdm
   - matplotlib
   - numpy
+  - scipy
+  - astropy
+  - emcee
+  - corner
   - pip:
