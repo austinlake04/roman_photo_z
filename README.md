@@ -1,4 +1,5 @@
 # roman_filters
+
 Bandpass filter simulation pipeline for NASA's Roman Space Telescope
 
 ![GitHub Latest Release][version-badge]
@@ -6,7 +7,6 @@ Bandpass filter simulation pipeline for NASA's Roman Space Telescope
 [![MIT License][mit-badge]][mit-url]
 [![Build Status][status-badge]][status-url]
 
-[rust-badge]: https://img.shields.io/badge/rust-%23000000.svg?style=for-the-badge&logo=rust&logoColor=white
 
 [version-badge]: https://img.shields.io/github/v/release/austinlake04/roman_filters?logo=github
 
@@ -19,7 +19,9 @@ Bandpass filter simulation pipeline for NASA's Roman Space Telescope
 [status-badge]: https://github.com/austinlake04/roman_filters/actions/workflows/ci.yaml/badge.svg?branch=main?event=pull_request
 [status-url]: https://github.com/austinlake04/roman_filters/actions
 
+
 ## License
+
 The code written for my website is distributed under the Apache License (Version 2.0) and MIT License. Unless explicited stated that your work is using the MIT License, the Apache License is the default for distribution.
 
 See [LICENSE-APACHE](https://github.com/austinlake04/roman_filters/blob/main/LICENSE-APACHE) and [LICENSE-MIT](https://github.com/austinlake04/roman_filters/blob/main/LICENSE-MIT) for details.
