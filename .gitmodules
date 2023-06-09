@@ -2,5 +2,5 @@
 	path = LEPHARE
 	url = https://gitlab.lam.fr/Galaxies/LEPHARE.git
 [submodule "pylephare"]
-	path = pylephare
+	path = py/pylephare
 	url = https://github.com/MartinBriday/pylephare.git
