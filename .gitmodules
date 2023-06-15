@@ -4,3 +4,6 @@
 [submodule "pylephare"]
 	path = pylephare
 	url = https://github.com/MartinBriday/pylephare.git
+[submodule "DESC_BPZ"]
+	path = DESC_BPZ
+	url = https://github.com/LSSTDESC/DESC_BPZ.git
