@@ -7,7 +7,7 @@ if ! conda -V; then
     source "${HOME}/conda/etc/profile.d/conda.sh"
 fi
 
-conda env create -f env.yaml
+conda env create -f env.yml
 
 cwd=$PWD
 cd $(cd "$(dirname "$0")"; pwd)
