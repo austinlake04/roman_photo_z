@@ -2,18 +2,16 @@
 
 Bandpass filter simulation pipeline for NASA's Roman Space Telescope
 
-![Latest Release][release-badge]
-[![Apache-2.0 License][apache-badge]](LICENSE-APACHE)
-[![MIT License][mit-badge]](LICENSE-MIT)
+[![Latest Release][release-badge]][release-url]
+[![License][license-badge]](LICENSE)
 [![CI Status][ci-badge]][ci-url]
 
 [release-badge]: https://img.shields.io/github/v/release/austinlake04/roman_filters
+[release-url]: https://github.com/austinlake04/website/releases/latest
 
-[apache-badge]: https://img.shields.io/github/license/austinlake04/roman_filters
-[mit-badge]: https://img.shields.io/badge/license-MIT-green.svg
-[version-badge]: https://img.shields.io/github/v/release/austinlake04/roman_filters?logo=github
+[license-badge]: https://img.shields.io/github/license/austinlake04/website
 
-[ci-badge]: https://github.com/austinlake04/roman_filters/actions/workflows/ci.yml/badge.svg?branch=main?
+[ci-badge]: https://github.com/austinlake04/roman_filters/actions/workflows/ci.yaml/badge.svg
 [ci-url]: https://github.com/austinlake04/roman_filters/actions
 
 ## Environment Setup
@@ -30,4 +28,4 @@ Aside from when you initially clone the repository, please use the following scr
 
 The code written for my website is distributed under the Apache License (Version 2.0) and MIT License. Unless explicited stated that your work is using the MIT License, the Apache License is the default for distribution.
 
-See [LICENSE-APACHE](LICENSE-APACHE) and [LICENSE-MIT](LICENSE-MIT) for details.
+See [LICENSE-APACHE](https://github.com/austinlake04/roman_filters/blob/main/LICENSE-APACHE) and [LICENSE-MIT](https://github.com/austinlake04/roman_filters/blob/main/LICENSE-MIT) for details.
