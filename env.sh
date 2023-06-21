@@ -1,6 +1,6 @@
 #!/bin/bash
 
-conda activate roman_filters
+conda activate roman_photo_z
 
 SCRIPT_DIR="$(cd "$(dirname "$0")"; pwd)"
 cd ${SCRIPT_DIR}
