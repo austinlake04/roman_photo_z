@@ -1,4 +1,4 @@
-# roman_photo_z
+# roman-photo-z
 
 Photometric redshift simulations for NASA's Roman Space Telescope
 
@@ -6,13 +6,13 @@ Photometric redshift simulations for NASA's Roman Space Telescope
 [![License][license-badge]](LICENSE)
 [![CI Status][ci-badge]][ci-url]
 
-[release-badge]: https://img.shields.io/github/v/release/austinlake04/roman_photo_z
-[release-url]: https://github.com/austinlake04/roman_photo_z/releases/latest
+[release-badge]: https://img.shields.io/github/v/release/austinlucaslake/roman-photo-z
+[release-url]: https://github.com/austinlucaslake/roman-photo-z/releases/latest
 
-[license-badge]: https://img.shields.io/github/license/austinlake04/roman_photo_z
+[license-badge]: https://img.shields.io/github/license/austinlucaslake/roman-photo-z
 
-[ci-badge]: https://github.com/austinlake04/roman_photo_z/actions/workflows/ci.yml/badge.svg
-[ci-url]: https://github.com/austinlake04/roman_photo_z/actions
+[ci-badge]: https://github.com/austinlucaslake/roman-photo-z/actions/workflows/ci.yml/badge.svg
+[ci-url]: https://github.com/austinlucaslake/roman-photo-z/actions
 
 ## Environment Setup
 
