@@ -1,0 +1,54 @@
+[project]
+name = "roman-photo-z"
+description = "Photoemtric Redshift Simulations for the Roman Space Telescope"
+version = "0.2"
+readme = "README.md"
+requires-python = "<3.11"
+license = { file = "LICENSE" }
+authors = [
+    {name = "Austin Lake", email = "austinlake04@gmail.com"}
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "License :: OSI Approved :: MIT License",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Natural Language :: English",
+    "Operating System :: OS Independent"
+]
+dependencies = [
+    "numpy<1.23.0",
+    "desc_bpz",
+    "pandas>=1.1",
+    "git",
+    "matplotlib",
+    "argparse",
+    "logging",
+    "synphot",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-runner",
+]
+
+[build-system]
+requires = ["setuptools", "wheel", "setuptools_scm[toml]>=6.2"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src", "tests"]
+
+[tool.setuptools.package-data]
+"*" = ["*.h5", "*.yaml", "*.columns", "*.pars"]
+"desc_bpz.data_files.SED" = ["*.sed", "*.list"]
+"desc_bpz.data_files.AB" = ["*.AB"]
+"desc_bpz.data_files.FILTER" = ["*.res"]
+"desc_bpz.scripts" = ["*.columns", "*.pars"]
