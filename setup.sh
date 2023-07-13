@@ -7,11 +7,8 @@ if ! conda -V; then
     source "${HOME}/conda/etc/profile.d/conda.sh"
 fi
 
-conda env create -f env.yml
+conda env create -f environment.yml
 
-cwd=$PWD
-cd ${BASH_SOURCE}
-
-source env.sh
+conda activate roman-photo-z
 
 cd $cwd

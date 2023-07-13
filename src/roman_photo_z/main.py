@@ -13,8 +13,15 @@ def main() -> None:
     -------
     None
     """
-    print("Hello word!")
 
+    import astropy.units as u
+
+    min = 5000
+    max = 25000
+
+    new_min_max = ([min, max]*u.AA).to(u.Hz, equivalencies=u.spectral())
+
+    print(new_min_max)
 def MCMC(log_likelihood, ndim: int, labels: list[str], fname: str, nwalkers: int = 10, nsteps: int = 15000, nburn: int = 5000, verbose: bool = True):
     """Markov Chain Monte Carlo sampling for posterior estimation
 
