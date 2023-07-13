@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = "<3.11"
 license = { file = "LICENSE" }
 authors = [
-    {name = "Austin Lake", email = "austinlake04@gmail.com"}
+    {name = "Austin Lucas Lake", email = "austinlake04@gmail.com"}
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
