@@ -1,10 +1,7 @@
-import argparse
 from astropy import units as u
 from astropy.constants import c, h
 import desc_bpz
 import git
-import matplotlib.pyplot as plt
-import matplotlib as mpl
 import numpy as np
 import os
 import pandas as pd
@@ -12,10 +9,10 @@ import sys
 from synphot import units, SourceSpectrum, SpectralElement, Observation
 from synphot.models import Empirical1D
 from tqdm import tqdm
-import logging
 from scipy.integrate import quad
-from roman_photo_z.io import save
+# from roman_photo_z.io import save, load_filters
 
+import argparse
 parser = argparse.ArgumentParser(description='RST Filter Flux Computation.')
 parser.add_argument("--zmin",
                     type=float, default=0.005, help="Minimum redshift for simulation.")
@@ -32,12 +29,7 @@ if args.zmax < args.zmin or args.deltaz < 0 or args.zmin < 0 or args.deltaz > ar
     print("Invalid redshift parameters requested. Exiting...")
     sys.exit(1)
 
-base_dir = os.path.abspath(git.Repo(".", search_parent_directories=True).working_tree_dir)
-current_dir, _ = os.path.split(__file__)
-output_dir = os.path.join(base_dir, "output")
-if not os.path.isdir(output_dir):
-    os.mkdir(output_dir)
-
+import logging
 logger = logging.getLogger(__name__)
 formatter = logging.Formatter("%(message)s")
 file_handler = logging.FileHandler(f"integrated_fluxes_Z.log", mode="w")
@@ -49,12 +41,40 @@ if args.verbose:
     stream_handler.setFormatter(formatter)
     logger.addHandler(stream_handler)
 
+import matplotlib.pyplot as plt
+import matplotlib as mpl
 mpl.style.use("tableau-colorblind10")
 plt.rcParams["axes.facecolor"]='white'
 plt.rcParams["savefig.facecolor"]='white'
 plt.rcParams["figure.facecolor"] = 'white'
 
+base_dir = os.path.abspath(git.Repo(".", search_parent_directories=True).working_tree_dir)
+current_dir, _ = os.path.split(__file__)
+output_dir = os.path.join(base_dir, "output")
+if not os.path.isdir(output_dir):
+    os.mkdir(output_dir)
 
+
+def load_filters() -> pd.DataFrame:
+    """Loads filter transmission profiles
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    filters: pandas.DataFrame
+        Filter transmission profiles as a function of wavelength
+    """
+    filters = pd.read_excel("https://roman.gsfc.nasa.gov/science/RRI/Roman_effarea_20210614.xlsx", skiprows=1)
+    filters.columns = [column.strip() for column in filters.columns]
+    if filters["Wave"][0] == 0:
+        filters.drop(0, inplace=True)
+    filters.drop(columns=["SNPrism", "Grism_1stOrder", "Grism_0thOrder"], inplace=True)
+    # filters["Wave"] *= 10000 # micron to angstrom conversion
+    filters[filters.columns.drop("Wave")] /= np.pi * 1.2**2 # effective area to throughput conversion
+    return filters
 
 def show(sed, sed_type: str, z: float, integrated_fluxes = None, display: bool = False, output_dir = output_dir) -> None:
     """Plots specific spectral energy distributions and filter transmission profiles
@@ -83,148 +103,139 @@ def show(sed, sed_type: str, z: float, integrated_fluxes = None, display: bool =
     -------
     None
     """
-    size = 10
-    fig, ax = plt.subplots(figsize=(size, size))
-    twin_ax = ax.twinx()
+    # size = 10
+    # fig, ax = plt.subplots(figsize=(size, size))
+    # twin_ax = ax.twinx()
+
+    # colors = ["red", "brown", "orange", "yellow", "green", "blue", "indigo", "darkviolet"]
+
+    # wavelength, flux = sed
+    # valid_index = np.where(flux > 0)
+    # ax.plot(wavelength[valid_index]*(z+1), flux[valid_index]/(z+1), color="gray", label=f"{sed_type}, Z = {z}")
+    # ax.set_ylabel("Relative Spectral Flux of Galaxy (erg s-1 cm-2 Å-1)")
+    # ax.set_xlabel("Wavelength (Å)")
+    # ax.set_ylim(top=np.max(flux.value))
+
+    # filters = load_filters()
+    # for (filter_id, integrated_flux) in zip(filters.drop(columns=["Wave"]).columns, integrated_fluxes):
+    #     valid_index = np.argwhere(filters[filter_id] > 0).flatten()
+    #     twin_ax.plot(filters["Wave"][valid_index], filters[filter_id][valid_index], color=colors.pop(), label=f"{filter_id}: {integrated_flux.value:7.2E} (erg cm-2 s-1)")    
+    # twin_ax.set_ylabel("Filter Throughput")
+    # twin_ax.set_ylim(top=1)
+    # twin_ax.set_xlim(right=filters["Wave"].iloc[-1])
+    # ax.set_xlim(0, filters["Wave"].iloc[-1])
+    # twin_ax.set_xlim(right=filters["Wave"].iloc[-1])
+    # twin_ax.legend(fontsize=size)
+    # save_path = f"{sed_type}_Z={z}.png"
+    # fig.savefig(save_path, bbox_inches="tight")
+    # if display:
+    #     plt.show()
+    # else:
+    #     plt.close(fig)
+
 
     colors = ["red", "brown", "orange", "yellow", "green", "blue", "indigo", "darkviolet"]
 
-    wavelength, flux = sed
-    valid_index = np.where(flux > 0)
-    ax.plot(wavelength[valid_index]*(z+1), flux[valid_index]/(z+1), color="gray", label=f"{sed_type}, Z = {z}")
-    ax.set_ylabel("Relative Spectral Flux of Galaxy (erg s-1 cm-2 Å-1)")
-    ax.set_xlabel("Wavelength (Å)")
-    ax.set_ylim(top=np.max(flux.value))
-
-
-    filters = pd.read_excel(os.path.join(current_dir, "Roman_effarea_20210614.xlsx"), skiprows=1)
-    filters.columns = [column.strip() for column in filters.columns]
-    filters.drop(columns=["SNPrism", "Grism_1stOrder", "Grism_0thOrder"], inplace=True)
-    filters["Wave"] *= 10000 # micron to angstrom conversion
-    filters[filters.columns.drop("Wave")] /= np.pi * 1.2**2 # effective area to throughput conversion
-    for (filter_id, integrated_flux) in zip(filters.drop(columns=["Wave"]).columns, integrated_fluxes):
+    filters = load_filters()
+    for filter_id in filters.drop(columns=["Wave"]).columns:
         valid_index = np.argwhere(filters[filter_id] > 0).flatten()
-        twin_ax.plot(filters["Wave"][valid_index], filters[filter_id][valid_index], color=colors.pop(), label=f"{filter_id}: {integrated_flux.value:7.2E} (erg cm-2 s-1)")    
-    twin_ax.set_ylabel("Filter Throughput")
-    twin_ax.set_ylim(top=1)
-    twin_ax.set_xlim(right=filters["Wave"].iloc[-1])
-    ax.set_xlim(0, filters["Wave"].iloc[-1])
-    twin_ax.set_xlim(right=filters["Wave"].iloc[-1])
-    twin_ax.legend(fontsize=size)
-    save_path = f"{sed_type}_Z={z}.png"
-    fig.savefig(save_path, bbox_inches="tight")
-    if display:
+        fig, ax = plt.subplots()
+
+        ax.plot(filters["Wave"][valid_index], filters[filter_id][valid_index], color=colors.pop(), label=f"{filter_id}")    
+        ax.set_title("Throughput vs. Wavelength [μm]")
+        ax.set_ylabel("Throughput")
+        ax.set_xlabel("Wavelength [μm]")
+        ax.set_ylim(top=1)
+        ax.set_xlim(right=filters["Wave"].iloc[-1])
+        ax.set_xlim(0, filters["Wave"].iloc[-1])
+        ax.set_xlim(right=filters["Wave"].iloc[-1])
+        ax.legend()
+        # fig.savefig("bandpass.png", bbox_inches="tight")
         plt.show()
-    else:
-        plt.close(fig)
 
-def organize(z, output_dir = output_dir) -> None:
-    """Organizes files in output directory
 
-    Parameters
-    ----------
-    z: float
-        Redshift outputs to target for organization
-
-    output_dir: str
-        Directory in which to save zip file
-
-    Returns
-    -------
-    None
-    """
-    save_path = os.path.join(output_dir, f"Z={z}.zip")
-    if os.path.isfile(save_path):
-        os.system(f"rm -rf {save_path}")
-    if os.path.isdir(save_path[:-4]):
-        os.system(f"rm -rf {save_path[:-4]}")
-    cmd = f"zip -m -D -q {save_path} *{z}.png *{z}.log"
-    os.system(cmd)
-
-def load_filters() -> pd.DataFrame:
-    """Loads filter transmission profiles
+def wave_to_freq(wavelengths: np.ndarray) -> np.ndarray:
+    """Converts wavelengths in units of Angstroms into frequencies in units Hertz (Hz)
 
     Parameters
     ----------
-    None
+    wavelenths : numpy.ndarray
+        Wavelengths in units of Angstroms
 
     Returns
     -------
-    filters: pandas.DataFrame
-        Filter transmission profiles as a function of wavelength
-    """
-    global current_dir
-    filters = pd.read_excel(os.path.join(current_dir, "data_files", "FILTER", "Roman_effarea_20210614.xlsx"), skiprows=1)
-    filters.columns = [column.strip() for column in filters.columns]
-    if filters["Wave"][0] == 0:
-        filters.drop(0, inplace=True)
-    filters.drop(columns=["SNPrism", "Grism_1stOrder", "Grism_0thOrder"], inplace=True)
-    filters["Wave"] *= 10000 # micron to angstrom conversion
-    filters[filters.columns.drop("Wave")] /= np.pi * 1.2**2 # effective area to throughput conversion
-    return filters
-
-def throughput(sed: SourceSpectrum, transmission_profile: SpectralElement):
-    """
-
-    Parameters
-    ----------
-    sed: SourceSpectrum
-        Sectral energy distribution in units of nJy
-    
-    transmission_profile: SecptralElement
-        Throughput as a function of wavelength
-
-    filter_id: int
-        RST filter ID (XXX)
-
-    Returns
-    -------
-    integrated_flux: float
-        Integrated flux with a given SED and filter transmission profile
-    """
-    # assuming sed is in units of nJy (LSST standard flux units)
-    integrated_flux = Observation(sed, transmission_profile).integrate()
-    return integrated_flux
-
-def spectral(wavelengths: np.ndarray) -> np.ndarray:
-    """Converts wavelengths of arbitrary units into frequencies in units Hertz (Hz)
-
-    Parameters
-    ----------
-    wavelenths: stropy.unit.quantity.Quantity
-        Wavelengths of arbitrary units
-
-    Returns
-    -------
-    frequencies: astropy.unit.quantity.Quantity
+    frequencies : numpy.ndarray
         Frequencies in units of Hertz (Hz)
     
     """
-    frequencies = (wavelengths).to(u.Hz, equivalencies=u.spectral())
+    frequencies = (wavelengths*u.Angstrom).to(u.Hz, equivalencies=u.spectral()).value
     return frequencies
 
-def magnitude(sed: SourceSpectrum, transmission_profile: SpectralElement) -> float:
+
+def flux(transmission_profile: SpectralElement, a: float, b: float, sed: SourceSpectrum = None, z: float = None) -> float:
+    """Calculates flux density through a filter with a given transmission profile and SED
+
+    Parameters
+    ----------
+    transmission_profile : numpy.ndarray
+        Transmission profile for a particular filter
+
+    a : float
+        Lower limit of integration
+    
+    b : float
+        Upper limit of integration
+
+    sed : numpy.ndarray
+        Spectral energy distribution of a galaxy from a rest frame
+    
+    z : float
+        Redshift
+    
+    Returns
+    -------
+    flux : float
+        Flux through a filter
+
+    error : float
+        Error of flux density
+
+    Notes
+    -----
+    Formula in use here is from Eric Switzer
+    Transmission_profile and sed should have a shape of (2, n) and (2, m) respective where n is the number of transmission samples and m is the number of sed samples.
+    """
+    flux, error = quad(lambda f: np.interp(f, *transmission_profile) * (3631 if sed is None else np.interp(f, *sed)) / (h.value * f), a, b)
+    return flux, error
+
+def magnitude(transmission_profile: np.ndarray, a: float, b: float, sed: np.ndarray = None, z: float = None) -> float:
     """Calculates AB calibrated magnitude 
 
     Parameters
     ----------
-    sed: synphot.units.SourceSpectrum
-        Spectral energy distribution
-
-    transmission_profile: synphot.units.SpectralElement
+    transmission_profile : numpy.ndarray
         Transmission profile for a particular filter
+
+    a : float
+        Lower limit of integration
+    
+    b : float
+        Upper limit of integration
+
+    sed : numpy.ndarray
+        Spectral energy distribution of a galaxy from a rest frame
+    
+    z : float
+        Redshift
     
     Returns
     -------
     m_AB: float
         AB calibrated magnitude
     """
-    observed_flux = quad(lambda f: transmission_profile(f).value * sed(f).value / (h.value * f), 0, np.inf)[0]
-    reference_flux = quad(lambda f: transmission_profile(f).value * 3631 / (h.value  * f), 0, np.inf)[0]
-    if reference_flux:
-        m_AB = 2.5*np.log10(observed_flux/reference_flux)
-        return m_AB
-    return np.nan
+    m_AB = -2.5*np.log10(flux(transmission_profile, a, b, sed, z)/flux(transmission_profile, a, b))
+    return m_AB
+
 
 def main() -> None:
     """Main function
@@ -251,15 +262,6 @@ def main() -> None:
     frequencies = spectral(filter_data["Wave"].to_numpy()*u.AA)
     for filter_id in filter_ids:
         transmission_profiles.append(SpectralElement(Empirical1D, points=frequencies, lookup_table=filter_data[filter_id].to_numpy()))
-
-    # filter_data = []
-    # filter_ids = []
-    # for filter_file in tqdm(sorted([f for f in os.listdir(filter_dir) if "RST" in f]),
-    #                         desc="Loading filter transmission profiles:",
-    #                         disable=(not args.verbose), position=0):
-    #     filter_ids.append(int(filter_file[filter_file.find("_")+2:filter_file.find(".")]))
-    #     filter_data.append(SpectralElement.from_file(os.path.join(filter_dir, filter_file), data_start=1))
-    
     
     z_range = np.linspace(start=args.zmin, stop=args.zmax, num=int((args.zmax-args.zmin)/args.deltaz))
     database = {}
@@ -300,4 +302,5 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    # main()
+    show(None, None, None)

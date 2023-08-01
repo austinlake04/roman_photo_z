@@ -23,3 +23,7 @@ If you have just cloned the repository, please run the setup script provided:
 Aside from when you initially clone the repository, please use the following script upon opening a new shell to configure the environment:
 
 `source env.sh`
+
+## Modeling
+
+To compute models using the provide code, please refer to `src/roman_photo_z/model.py`. This file contains functions to compute fluxes and magnitudes of observed spectra.
