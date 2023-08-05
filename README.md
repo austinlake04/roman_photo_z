@@ -1,18 +1,18 @@
-# roman_photo_z
+# rpz
 
-Photometric redshift simulations for NASA's Roman Space Telescope
+Roman Photo-Z: Photometric Redshift Simulations for the Roman Space Telescope
 
 [![Latest Release][release-badge]][release-url]
 [![License][license-badge]](LICENSE)
 [![CI Status][ci-badge]][ci-url]
 
-[release-badge]: https://img.shields.io/github/v/release/austinlucaslake/roman_photo_z
-[release-url]: https://github.com/austinlucaslake/roman_photo_z/releases/latest
+[release-badge]: https://img.shields.io/github/v/release/austinlucaslake/rpz
+[release-url]: https://github.com/austinlucaslake/rpz/releases/latest
 
-[license-badge]: https://img.shields.io/github/license/austinlucaslake/roman_photo_z
+[license-badge]: https://img.shields.io/github/license/austinlucaslake/rpz
 
-[ci-badge]: https://github.com/austinlucaslake/roman_photo_z/actions/workflows/ci.yml/badge.svg
-[ci-url]: https://github.com/austinlucaslake/roman_photo_z/actions
+[ci-badge]: https://github.com/austinlucaslake/rpz/actions/workflows/ci.yml/badge.svg
+[ci-url]: https://github.com/austinlucaslake/rpz/actions
 
 ## Environment Setup
 
@@ -26,4 +26,4 @@ Aside from when you initially clone the repository, please use the following scr
 
 ## Modeling
 
-To compute models using the provide code, please refer to `src/roman_photo_z/model.py`. This file contains functions to compute fluxes and magnitudes of observed spectra.
+To compute models using the provide code, please refer to `src/rpz/model.py`. This file contains functions to compute fluxes and magnitudes of observed spectra.

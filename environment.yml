@@ -1,4 +1,4 @@
-name: roman_photo_z
+name: rpz
 channels:
   - conda-forge
 dependencies:

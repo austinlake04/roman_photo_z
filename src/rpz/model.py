@@ -29,7 +29,7 @@ assert 0 < args.zmin < args.zmax, "Invalid redshift boundary conditions!"
 assert 0 < args.dz < args.zmax-args.zmin, "Invalid redshift step size!"
 
 class Model:
-    def wave_to_freq(wavelengths: np.ndarray) -> np.ndarray:
+    def wave_to_freq(wavelengths: u.Quantity) -> u.Quantity:
         """Converts wavelengths of arbitrary units into frequencies in units Hertz (Hz)
 
         Parameters
@@ -45,21 +45,21 @@ class Model:
         frequencies = (wavelengths).to(u.Hz, equivalencies=u.spectral())
         return frequencies
 
-    def total_flux(throughput: np.ndarray, a: float, b: float, sed: np.ndarray = None, z: float = None) -> float:
+    def total_flux(transmission_profile: np.ndarray, lower_limit: float, upper_limit: float, spectra: np.ndarray, z: float) -> float:
         """Calculates total flux through a filter with a given transmission profile and SED
 
         Parameters
         ----------
-        throughput : numpy.ndarray
+        transmission_profile : numpy.ndarray
             Transmission profile for a particular filter
 
-        a : float
+        lower_limit : float
             Lower limit of integration
         
-        b : float
+        upper_limit : float
             Upper limit of integration
 
-        sed : numpy.ndarray
+        spectra : numpy.ndarray
             Spectral energy distribution of a galaxy from a rest frame
         
         z : float
@@ -70,7 +70,7 @@ class Model:
         flux : float
             Flux through a filter
 
-        flux_error : float
+        error : float
             Error of flux density
 
         Notes
@@ -78,48 +78,51 @@ class Model:
         Formula in use here is from Eric Switzer
         Throughput and sed should have a shape of (2, n) and (2, m) respective where n is the number of transmission samples and m is the number of sed samples.
         """
-        assert len(throughput.shape) == throughput.shape[0] == len(sed.shape) == sed.shape[0] == 2
-        flux, flux_error = quad(lambda λ: np.interp(λ, *throughput) * np.interp(λ, sed[0]*(1+z), sed[1]/(1+z)), a, b, limit=1000)
-        return flux, flux_error
+        assert len(transmission_profile.shape) == transmission_profile.shape[0] == len(spectra.shape) == spectra.shape[0] == 2
+        flux, error = quad(lambda λ: np.interp(λ, *transmission_profile) * np.interp(λ, spectra[0]*(1+z), spectra[1]/(1+z)), lower_limit, upper_limit, limit=1000)
+        return flux, error
 
-    def photon_counts(throughput: np.ndarray, a: float, b: float, sed: np.ndarray = None, z: float = None):
+    def photon_count(transmission_profile: np.ndarray, lower_limit: float, upper_limit: float, spectra: np.ndarray|None = None, z: float|None = None):
         """Counts photons passed through filter over a specific bandpass
 
-        throughput : numpy.ndarray
+        transmission_profile : numpy.ndarray
             Transmission profile for a particular filter
 
-        a : float
+        lower_limit : float
             Lower limit of integration
         
-        b : float
+        upper_limit : float
             Upper limit of integration
 
-        sed : numpy.ndarray
+        spectra : numpy.ndarray|None
             Spectral energy distribution of a galaxy from a rest frame
         
-        z : float
+        z : float|None
             Redshift
             
         Returns
         -------
-        counts : float
+        photons : float
             Photons counted through a filter
-        """
-        counts = quad(lambda v: np.interp(v, *throughput) * (3631 if sed is None else np.interp(v, sed[0]*(1+z), sed[1]/(1+z))) / (v * h.value), a, b, limit=1000)[0]
-        return counts
 
-    def magnitude(throughput: np.ndarray, a: float, b: float, sed: np.ndarray = None, z: float = None) -> float:
+        error : float
+            Error of photon count
+        """
+        photons, error = quad(lambda v: np.interp(v, *transmission_profile) * (3631 if spectra or z is None else np.interp(v, spectra[0]*(1+z), spectra[1]/(1+z))) / (v * h.value), lower_limit, upper_limit, limit=1000)
+        return photons, error
+
+    def magnitude(transmission_profile: np.ndarray, lower_limit: float, upper_limit: float, spectra: np.ndarray, z: float) -> float:
         """Calculates AB calibrated magnitude 
 
         Parameters
         ----------
-        throughput : numpy.ndarray
+        transmission_profile : numpy.ndarray
             Transmission profile for a particular filter
 
-        a : float
+        lower_limit : float
             Lower limit of integration
         
-        b : float
+        upper_limit : float
             Upper limit of integration
 
         sed : numpy.ndarray
@@ -130,12 +133,15 @@ class Model:
         
         Returns
         -------
-        m : float
+        magnitude : float
             AB magnitude
         """
-        assert len(throughput.shape) == throughput.shape[0] == len(sed.shape) == sed.shape[0] == 2
-        m = -2.5*np.log10(Model.counts(throughput, a, b, sed, z)[0]/Model.counts(throughput, a, b)[0])
-        return m
+        assert len(transmission_profile.shape) == transmission_profile.shape[0] == len(spectra.shape) == spectra.shape[0] == 2
+        obs = Model.photon_count(transmission_profile, lower_limit, upper_limit, spectra, z)
+        mod = Model.photon_count(transmission_profile, lower_limit, upper_limit)
+        magnitude = -2.5*np.log10(obs[0]/mod[0])
+        error = -2.5*np.log10(obs[1]/mod[1])
+        return magnitude, error
 
     def load_filters() -> pd.DataFrame:
         """Loads filter transmission profiles
@@ -152,8 +158,8 @@ class Model:
         filters = pd.read_excel("https://roman.gsfc.nasa.gov/science/RRI/Roman_effarea_20210614.xlsx", skiprows=1)
         filters.columns = [column.strip() for column in filters.columns]
         filters.drop(columns=["SNPrism", "Grism_1stOrder", "Grism_0thOrder"], inplace=True)
-        filters[filters.columns.drop("Wave")] /= np.pi * 1.2**2 # converts effective area to throughput
-        filters["Wave"] = (filters["Wave"]*10000).astype(int) # μm to Å
+        filters[filters.columns.drop("Wave")] /= np.pi * 1.2**2 # Filter response conversion: effective area [m^2] --> throughput [unitless]
+        filters["Wave"] = (filters["Wave"]*10000).astype(int) # Bandpass conversion: μm --> Å
         return filters
 
 def main():
@@ -182,7 +188,6 @@ def main():
     nt=len(spectra)
     nz=len(z_range)
 
-    #Get the model fluxes
     f_mod=np.empty((nz,nt,nf))
     abfiles=[]
 
@@ -193,64 +198,45 @@ def main():
             model=spectra[it]+'.'+filtro+'.AB'
             model_path = get_ab_file(model)
             abfiles.append(model)
-            #Generate new ABflux files if not present
-            # or if new_ab flag on
             if model not in os.listdir(ab_dir):
-                #print spectra[it],filters[jf]
                 print(f'     Generating {model} ....')
                 ABflux(spectra[it],filtro,madau='no')
-                #z_ab=arange(0.,zmax_ab,dz_ab) #zmax_ab and dz_ab are def. in bpz_tools
-                # abflux=f_z_sed(spectra[it],filters[jf], z_ab,units='nu',madau=pars.d['MADAU'])
-                # abflux=clip(abflux,0.,1e400)
-                # buffer=join(['#',spectra[it],filters[jf], 'AB','\n'])
-                #for i in range(len(z_ab)):
-                #	 buffer=buffer+join([`z_ab[i]`,`abflux[i]`,'\n'])
-                #open(model_path,'w').write(buffer)
-                #zo=z_ab
-                #f_mod_0=abflux
-            #else:
-                #Read the data
-
             zo,f_mod_0=get_data(model_path,(0,1))
-        #Rebin the data to the required redshift resolution
             f_mod[:,it,jf]=match_resol(zo,f_mod_0,z_range)
-            #if sometrue(less(f_mod[:,it,jf],0.)):
             if less(f_mod[:,it,jf],0.).any():
                 print('Warning: some values of the model AB fluxes are <0')
                 print('due to the interpolation ')
                 print('Clipping them to f>=0 values')
-                #To avoid rounding errors in the calculation of the likelihood
                 f_mod[:,it,jf]=clip(f_mod[:,it,jf],0.,1e300)
-
-                #We forbid f_mod to take values in the (0,1e-100) interval
-                #f_mod[:,it,jf]=where(less(f_mod[:,it,jf],1e-100)*greater(f_mod[:,it,jf],0.),0.,f_mod[:,it,jf])
-    with open("model.txt", "w") as f:
-        print("Saving model")
-        print(f_mod, file=f)
 
     f_obs=np.empty_like(f_mod)
     ef_obs=np.empty_like(f_mod)
 
-    spectra = [np.loadtxt(os.path.join(sed_dir, sed_file)).T for sed_file in os.listdir(sed_dir) if "CWWSB4" not in sed_file]
-    filter_data = Model.load_filters()
-    filters = [(filter_data[["Wave", filter_id]].to_numpy().T, filter_data[filter_data[filter_id]>0]["Wave"].min(),
-                                                               filter_data[filter_data[filter_id]>0]["Wave"].max()) for filter_id in filter_data.columns.drop("Wave")]
-    for j, sed in enumerate(spectra):
-        for i, z in enumerate(tqdm(z_range, desc=f"Redshifts for Galaxy Type #{j+1} of {len(spectra)}", disable=(not args.verbose), position=0)):
-            for k, (throughput, a, b) in enumerate(filters):
-                f_obs[i,j,k], ef_obs[i,j,k] = Model.total_flux(throughput, a, b, sed, z)
-                
-    with open("observed_old.txt", "w") as f:
-        print("Saving simulated observations")
-        print(f_obs, file=f)
+    seds = [np.loadtxt(os.path.join(sed_dir, sed_file)).T for sed_file in os.listdir(sed_dir) if "CWWSB4" not in sed_file] # SED units: flux [ergs/s/cm^2/Å] vs wavelength [Å]
+    filters = Model.load_filters() # Filter units: throughput [unitless] vs wavelength [Å]
+    transmission_profiles = [(filters[["Wave", filter_id]].to_numpy().T, filters[filters[filter_id]>0]["Wave"].min(),
+                                                               filters[filters[filter_id]>0]["Wave"].max()) for filter_id in filters.columns.drop("Wave")]
+    # for j, sed in enumerate(sed):
+    #     for i, z in enumerate(tqdm(z_range, desc=f"Redshifts for SED Template #{j+1} of {len(spectra)}", disable=(not args.verbose), position=0)):
+    #         for k, (transmission_profile, lower_limit, upper_limit) in enumerate(transmission_profiles):
+    #             f_obs[i,j,k], ef_obs[i,j,k] = Model.magnitude(transmission_profile, lower_limit, upper_limit, sed, z)
+    
+    for j, spectra in enumerate(seds):
+        for i, z in enumerate(tqdm(z_range, desc=f"Redshifts for SED Template #{j+1} of {len(spectra)}", disable=(not args.verbose), position=0)):
+            for k, (transmission_profile, lower_limit, upper_limit) in enumerate(transmission_profiles):
+                f_obs[i,j,k], ef_obs[i,j,k] = Model.total_flux(transmission_profile, lower_limit, upper_limit, spectra, z)         
+
 
     ratio = f_obs / f_mod
     weight = f_obs / ef_obs
-    ratio = np.mean(ratio * weight, axis=[0, 1])
+    ratio = np.sum(ratio * weight, axis=(0, 1), dtype=np.float64)/np.sum(weight, axis=(0, 1), dtype=np.float64)
 
-    with open("ratio.txt", "w") as f:
-        print("Saving f_obs/f_model weight b y f_obs/ ratio")
-        print(ratio, file=f)
+    print(ratio)
+
+    np.save("model.npy", f_mod)
+    np.save("observed.npy", f_obs)
+    np.save("observed_error.npy", ef_obs)
+    np.save("ratio.npy", ratio)
 
 if __name__ == "__main__":
     main()

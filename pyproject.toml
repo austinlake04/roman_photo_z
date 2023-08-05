@@ -1,5 +1,5 @@
 [project]
-name = "roman_photo_z"
+name = "rpz"
 description = "Photoemtric Redshift Simulations for the Roman Space Telescope"
 version = "0.2"
 readme = "README.md"

@@ -9,6 +9,6 @@ fi
 
 conda env create -f environment.yml
 
-conda activate roman_photo_z
+conda activate rpz
 
 cd $cwd
